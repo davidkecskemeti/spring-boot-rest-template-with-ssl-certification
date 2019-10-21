@@ -1,0 +1,28 @@
+ @Bean
+    RestTemplate restTemplate() throws Exception {
+
+        LOGGER.info("Creating rest template with trust store: path=" + trustStore);
+
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        FileInputStream instream = new FileInputStream(new File("changeit.P12"));
+        try {
+            keyStore.load(instream, "changeit-password".toCharArray());
+        } finally {
+            instream.close();
+        }
+
+        SSLContext sslcontext = SSLContexts.custom()
+                .loadKeyMaterial(keyStore, "changeit-password".toCharArray())
+                .build();
+
+        SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
+                sslcontext,
+                SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+        CloseableHttpClient httpclient = HttpClients.custom()
+                .setHostnameVerifier(SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER)
+                .setSSLSocketFactory(sslsf)
+                .build();
+
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpclient);
+        return new RestTemplate(factory);
+    }
